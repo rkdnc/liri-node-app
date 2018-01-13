@@ -2,6 +2,7 @@ require("dotenv").config();
 var twitter = require("twitter");
 var Spotify = require("node-spotify-api");
 const keys = require("./keys.js");
+var inquirer = require("inquirer");
 //Twitter API Keys
 var client = new twitter(keys.twitter);
 // Spotify API Keys
@@ -24,48 +25,55 @@ function recallTweets() {
                     //${element.created_at} was omitted because my 20 tweets are park fo a poem, and that makes the formatting look ugly.
                 );
             });
-            // console.log(tweets[0]);
+            liriInit();
 
         }
     })
 };
-
-var songTitle = "Time Consumer";
-
 //if songTitle is blank, replace it with 'The Sign'
-function playSong(title) {
-    spotify.search({
-        type: 'track',
-        query: title,
-        limit: 1
-    }, function (err, data) {
-        if (!err) {
-            var songObj = data.tracks.items[0];
-            var artistName = songObj.album.artists[0].name;
-            console.log(`
+function playSong() {
+    inquirer.prompt([{
+        type: "input",
+        message: "What do you want me to look up?",
+        name: "query"
+    }]).then(function (inquirerResponse) {
+        spotify.search({
+            type: 'track',
+            query: inquirerResponse.query,
+            limit: 1
+        }, function (err, data) {
+            if (!err) {
+                var songObj = data.tracks.items[0];
+                var artistName = songObj.album.artists[0].name;
+                console.log(`
             Artist: ${artistName}
-            Song title: ${title}
+            Song title: ${inquirerResponse.query}
             Album Name: ${songObj.album.name}
             Preview URL: ${songObj.preview_url}`);
-            // console.log(songObj);
-        } else {
-            console.log(`Error: ${err}`);
-        }
+                liriInit();
+            } else {
+                console.log(`Error: ${err}`);
+            }
+        })
     })
-}
+};
 // playSong(songTitle);
 
 //OMDB API call
 
 var request = require("request");
-var movieName = "";
 //Parse movieName to add +'s
 function movieQuery() {
-    request(`http://www.omdbapi.com/?t=${movieName}&apikey=trilogy`, function (err, response, body) {
-        if (!err && response.statusCode === 200) {
-            var movieObj = JSON.parse(body);
-            // console.log(movieObj);
-            console.log(`
+    inquirer.prompt([{
+        type: "input",
+        message: "What do you want me to look up?",
+        name: "query"
+    }]).then(function (inquirerResponse) {
+        request(`http://www.omdbapi.com/?t=${inquirerResponse.query}&apikey=trilogy`, function (err, response, body) {
+            if (!err && response.statusCode === 200) {
+                var movieObj = JSON.parse(body);
+                // console.log(movieObj);
+                console.log(`
                 Movie Title: ${movieObj.Title}
                 Year Released: ${movieObj.Year}
                 IMDB Rating: ${movieObj.Ratings[0].Value}
@@ -75,8 +83,55 @@ function movieQuery() {
                 Plot: ${movieObj.Plot}
                 Actors: ${movieObj.Actors}
                  `);
+                 liriInit();
+            }
+        })
+    })
+};
+//Opens the text file and reads what's inside, triggering a command
+var fs = require("fs");
+
+function doThis() {
+    fs.readFile('random.txt', 'utf8', function (error, data) {
+        if (error) {
+            return console.log(error);
         }
+        console.log(data);
     })
 };
 
-var fs = require("fs");
+
+
+function liriInit() {
+    inquirer.prompt([{
+            type: "list",
+            message: "Hello! What would you like to do?",
+            choices: ["Read my tweets", "Spotify this song", "Movie this!", "Do whatever"],
+            name: "userCommand"
+        },
+        {
+            type: "confirm",
+            message: "Are you sure?",
+            name: "confirm",
+            default: true
+        }
+    ]).then(function (inquirerResponse) {
+        if (inquirerResponse.confirm) {
+            switch (inquirerResponse.userCommand) {
+                case "Read my tweets":
+                    recallTweets();
+                    break;
+                case "Spotify this song":
+                    playSong();
+                    break;
+                case "Movie this!":
+                    movieQuery();
+                    break;
+                case "Do whatever":
+                    doThis()
+                    break;
+            }
+        }
+    })
+}
+liriInit();
