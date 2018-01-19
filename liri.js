@@ -22,7 +22,7 @@ function recallTweets() {
                 console.log(`
             ------
             ${element.text}`
-                    //${element.created_at} was omitted because my 20 tweets are park fo a poem, and that makes the formatting look ugly.
+                    //${element.created_at} was omitted because my 20 tweets are park of a poem, and that makes the formatting look ugly.
                 );
             });
             liriInit();
